@@ -8,6 +8,7 @@ Data::RingBuffer - A simple ring buffer data structure
 use Data::RingBuffer;
 
 my $rb = Data::RingBuffer->new(4);
+my $rb = Data::RingBuffer->new(4, { die_overflow => 1 });
 
 $rb->push($obj1);
 $rb->push($obj2);
@@ -32,14 +33,16 @@ This module provides a simple wrapper over them.
 
 ## new
 
-`$obj = Data::RingBuffer->new($size)` is an object constructor
+`$obj = Data::RingBuffer->new($size[, $hashref])` is an object constructor
 that will correctly initialize the object being created.
 
 - `$size` is a positive number of slots in the buffer.
+- `$hashref` _(optional)_ is a hash with optional parameters.
+    - `die_overflow` causes croak if the buffer overflows.
 
 ## push
 
-Add an `$element` to the buffer.
+`$obj->push($element)` adds an `$element` to the buffer.
 
 - `$element` is some scalar being inserted in the buffer.
 

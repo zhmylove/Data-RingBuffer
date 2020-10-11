@@ -8,16 +8,19 @@ use 5.008;
 use strict;
 use warnings FATAL => 'all';
 use Carp;
-# use Exporter 'import';
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 $VERSION =~ tr/_//d;
 
 # Add an element to the buffer
+# args: $obj
 sub push {
-    shift @{$_[0]->{buf}} if $_[0]->{head} == $_[0]->{size};
+    if ($_[0]->{head} == $_[0]->{size}) {
+        croak "Buffer overflow!" if exists $_[0]->{die_overflow};
+        shift @{$_[0]->{buf}};
+        $_[0]->{tail}-- if $_[0]->{tail} > 0;
+    }
 
-    $_[0]->{tail}-- if $_[0]->{tail} > 0;
     push @{$_[0]->{buf}}, $_[1];
 
     $_[0]->{head}++ if $_[0]->{head} < $_[0]->{size};
@@ -38,17 +41,23 @@ sub get {
 }
 
 # OO ctor
-# args: $size
+# args: $size, (optional) { %options }
 sub new {
     # Parse arguments
     croak "Buffer size not defined" unless defined $_[1];
     croak "Buffer size must be positive" unless $_[1] > 0;
+
+    my %opts;
+    if (ref $_[2] eq "HASH") {
+        $opts{die_overflow} = undef if $_[2]->{die_overflow};
+    }
 
     bless {
         buf => [],
         size => $_[1],
         head => 0,
         tail => 0,
+        %opts,
     }, $_[0];
 }
 
@@ -69,6 +78,7 @@ Data::RingBuffer - A simple ring buffer data structure
     use Data::RingBuffer;
 
     my $rb = Data::RingBuffer->new(4);
+    my $rb = Data::RingBuffer->new(4, { die_overflow => 1 });
 
     $rb->push($obj1);
     $rb->push($obj2);
@@ -92,18 +102,26 @@ This module provides a simple wrapper over them.
 
 =head2 new
 
-C<$obj = Data::RingBuffer-E<gt>new($size)> is an object constructor
+C<$obj = Data::RingBuffer-E<gt>new($size[, $hashref])> is an object constructor
 that will correctly initialize the object being created.
 
 =over 4
 
 =item C<$size> is a positive number of slots in the buffer.
 
+=item C<$hashref> I<(optional)> is a hash with optional parameters.
+
+=over 4
+
+=item C<die_overflow> causes croak if the buffer overflows.
+
+=back
+
 =back
 
 =head2 push
 
-Add an C<$element> to the buffer.
+C<$obj-E<gt>push($element)> adds an C<$element> to the buffer.
 
 =over 4
 
